@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Lens</title>
+<style>
+  :root {
+    --bg: #faf8f5; --card: #ffffff; --ink: #1c1a17; --muted: #6f6a63; --line: #e7e2da;
+    --accent: #1c1a17; --accent-ink: #faf8f5; --good: #2f7a4f; --warn: #a3542a; --soft: #f2eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141311; --card: #1d1b18; --ink: #efebe4; --muted: #9c968c; --line: #2f2c28;
+      --accent: #efebe4; --accent-ink: #141311; --good: #6cc093; --warn: #e39a6f; --soft: #26231f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font: 600 28px/1.1 Georgia, "Times New Roman", serif; letter-spacing: .5px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  #drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 28px 16px; text-align: center;
+    cursor: pointer; color: var(--muted); transition: border-color .15s, background .15s; }
+  #drop.over { border-color: var(--ink); background: var(--soft); }
+  #drop strong { color: var(--ink); }
+  #thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0;
+    background: rgba(0,0,0,.6); color: #fff; cursor: pointer; font-size: 13px; line-height: 22px; padding: 0; }
+  textarea { width: 100%; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--ink); font: inherit; resize: vertical; min-height: 44px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  label.check { display: flex; gap: 8px; align-items: center; color: var(--muted); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px;
+    padding: 11px 22px; font: 600 15px/1 inherit; cursor: pointer; }
+  button.primary:disabled { opacity: .4; cursor: default; }
+  .error { color: var(--warn); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .payout { background: var(--soft); border-radius: 12px; padding: 16px 18px; margin: 16px 0; }
+  .payout .big { font: 600 30px/1.1 Georgia, serif; }
+  .grid { display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; margin: 12px 0; }
+  .grid dt { color: var(--muted); }
+  .grid dd { margin: 0; }
+  .conf { display: inline-block; vertical-align: middle; width: 60px; height: 6px; border-radius: 3px; background: var(--line); margin-left: 8px; overflow: hidden; }
+  .conf i { display: block; height: 100%; background: var(--ink); }
+  h2 { font: 600 20px/1.25 Georgia, serif; margin: 0 0 4px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 20px 0 6px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 2px 0; }
+  .pill { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--soft); margin: 2px 4px 2px 0; }
+  .good { color: var(--good); } .bad { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  a { color: inherit; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--ink);
+    border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 520px) { .grid { grid-template-columns: 110px 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Shop Lens</h1>
+  <p class="sub">Photograph a designer piece and see what it is and what it could sell for.</p>
+
+  <form class="card" id="form">
+    <div id="drop" tabindex="0" role="button" aria-label="Add photos">
+      <strong>Add photos</strong> or drop them here<br>
+      <span class="small">Up to 5. Include the front, the brand label, the care/size tag, and any serial or date code.</span>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div id="thumbs"></div>
+    <textarea id="notes" rows="1" placeholder="Anything you know (optional), e.g. 'bought at Saks ~2019'"></textarea>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="verify"> Verify with web search (slower, finds comps)</label>
+      <button class="primary" id="go" type="submit" disabled>Identify</button>
+    </div>
+  </form>
+
+  <div id="status"></div>
+  <div id="result"></div>
+</main>
+
+<script>
+const MAX = 5, EDGE = 1568;
+const files = [];               // { blob, url }
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : null;
+const usd = n => n == null ? "—" : "$" + Math.round(n).toLocaleString();
+const pretty = s => esc(String(s ?? "").replace(/_/g, " "));
+
+// Downscale in the browser: smaller uploads, and the browser decodes formats
+// (e.g. iPhone HEIC in Safari) that the server cannot.
+async function shrink(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => null);
+  if (!bmp) return file;
+  const s = Math.min(1, EDGE / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(r => c.toBlob(b => r(b || file), "image/jpeg", 0.88));
+}
+
+async function add(list) {
+  for (const f of list) {
+    if (files.length >= MAX) break;
+    if (!f.type.startsWith("image/") && !/\.hei[cf]$/i.test(f.name)) continue;
+    const blob = await shrink(f);
+    files.push({ blob, url: URL.createObjectURL(blob) });
+  }
+  render();
+}
+
+function render() {
+  $("thumbs").innerHTML = files.map((f, i) =>
+    `<div class="thumb"><img src="${f.url}" alt="Photo ${i + 1}"><button type="button" data-i="${i}" aria-label="Remove">×</button></div>`).join("");
+  $("go").disabled = files.length === 0;
+}
+
+$("thumbs").addEventListener("click", e => {
+  const i = e.target.dataset.i;
+  if (i != null) { URL.revokeObjectURL(files[i].url); files.splice(+i, 1); render(); }
+});
+const drop = $("drop");
+drop.addEventListener("click", () => $("file").click());
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+$("file").addEventListener("change", e => { add([...e.target.files]); e.target.value = ""; });
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => add([...e.dataTransfer.files]));
+document.addEventListener("paste", e => add([...e.clipboardData.files]));
+
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = new FormData();
+  files.forEach((f, i) => fd.append("photo", f.blob, `photo${i + 1}.jpg`));
+  fd.append("notes", $("notes").value);
+  fd.append("verify", $("verify").checked ? "true" : "false");
+
+  $("go").disabled = true;
+  $("result").innerHTML = "";
+  $("status").innerHTML = `<p class="muted"><span class="spinner"></span>${$("verify").checked ? "Identifying, then checking resale sites…" : "Identifying…"}</p>`;
+  try {
+    const res = await fetch("/api/identify", { method: "POST", body: fd });
+    const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    $("status").innerHTML = "";
+    $("result").innerHTML = view(data);
+  } catch (err) {
+    $("status").innerHTML = `<p class="error">${esc(err.message)}</p>`;
+  } finally {
+    $("go").disabled = files.length === 0;
+  }
+});
+
+const conf = v => `<span class="conf" title="${Math.round((v || 0) * 100)}%"><i style="width:${Math.round((v || 0) * 100)}%"></i></span>`;
+const list = (items, cls = "") => items?.length ? `<ul>${items.map(x => `<li class="${cls}">${esc(x)}</li>`).join("")}</ul>` : `<p class="muted small">None noted.</p>`;
+
+// Jev's independent check of the identification, shown as plain-language verdicts.
+function checkView(c, escalatedTo) {
+  if (!c) return "";
+  const p = v => v == null ? "—" : Math.round(v * 100) + "%";
+  const tone = { agrees: "good", uncertain: "", disagrees: "bad" }[c.verdict] || "";
+  const label = { agrees: "Second opinion agrees", uncertain: "Second opinion is unsure", disagrees: "Second opinion disagrees" }[c.verdict] || c.verdict;
+  return `<h3>Second opinion (Jev)</h3>
+    <p class="${tone}" style="margin:0 0 4px"><strong>${esc(label)}</strong>${escalatedTo ? ` · re-checked with ${esc(escalatedTo)}` : ""}</p>
+    <p class="small muted" style="margin:0">Brand ${p(c.brandMatch)} · Model ${p(c.modelMatch)} · Category: ${esc(c.category)} ·
+      Label visible ${p(c.labelVisible)} · Photo quality ${(c.photoQuality / 2 * 100).toFixed(0)}%</p>
+    ${c.reasons.length ? `<ul class="small">${c.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}`;
+}
+
+function view(d) {
+  const id = d.identification, v = d.verification, p = d.payout;
+  const r = v?.adjustedResale || id.resale;
+  const row = (k, val, c) => val ? `<dt>${k}</dt><dd>${esc(val)}${c != null ? conf(c) : ""}</dd>` : "";
+
+  let html = `<div class="card">
+    <h2>${esc(v?.confirmedProductName || id.summary)}</h2>
+    ${v?.confirmedProductName ? `<p class="muted">${esc(id.summary)}</p>` : ""}
+
+    <div class="payout">
+      <div class="muted small">Estimated payout if consigned on TheRealReal</div>
+      <div class="big">${usd(p.low.payout)} – ${usd(p.high.payout)}</div>
+      <div class="small">Typical: <strong>${usd(p.typical.payout)}</strong> (you keep ${p.typical.keepPercent}% of a ${usd(p.typical.salePrice)} sale)
+        · Resale value ${usd(r.lowUsd)}–${usd(r.highUsd)} · Demand: ${pretty(r.demand)}</div>
+      <div class="muted small" style="margin-top:6px">${esc(r.reasoning)}</div>
+    </div>
+
+    <dl class="grid">
+      ${row("Brand", id.brand, id.confidence.brand)}
+      ${row("Designer", id.designer)}
+      ${row("Model / line", id.modelOrLine, id.confidence.model)}
+      ${row("Collection", v?.collectionOrSeason || id.collectionOrSeason, v?.collectionOrSeason ? null : id.confidence.collection)}
+      ${row("Era", id.yearRange)}
+      ${row("Category", [id.category, id.subcategory].filter(Boolean).join(" · "))}
+      ${row("Materials", id.materials.join(", "))}
+      ${row("Colors", id.colors.join(", "))}
+      ${row("Hardware", id.hardware)}
+      ${row("Size", id.size)}
+      ${row("Condition", `${id.condition.grade.replace(/_/g, " ")}. ${id.condition.notes}`)}
+      ${row("Original retail", (v?.originalRetailUsd ?? id.originalRetailUsd) != null ? usd(v?.originalRetailUsd ?? id.originalRetailUsd) : null)}
+    </dl>
+
+    ${checkView(d.crossCheck, d.escalatedTo)}
+
+    ${id.visibleText.length ? `<h3>Text read from photos</h3>${id.visibleText.map(t => `<span class="pill">${esc(t)}</span>`).join("")}` : ""}
+
+    <h3>Authenticity</h3>
+    ${id.authenticity.positiveSignals.length ? list(id.authenticity.positiveSignals, "good") : ""}
+    ${id.authenticity.redFlags.length ? list(id.authenticity.redFlags, "bad") : ""}
+    <p class="small muted" style="margin:8px 0 2px">Recommended checks:</p>${list(id.authenticity.recommendedChecks)}
+
+    ${id.alternatives.length ? `<h3>Could also be</h3><ul>${id.alternatives.map(a => `<li><strong>${esc(a.brand)} ${esc(a.model)}</strong>: <span class="muted">${esc(a.reason)}</span></li>`).join("")}</ul>` : ""}
+
+    ${id.photoRequests.length ? `<h3>Photos that would sharpen this</h3>${list(id.photoRequests)}` : ""}
+  </div>`;
+
+  if (v) {
+    html += `<div class="card"><h2>Web check</h2><p class="muted">${esc(v.notes)}</p>
+      ${v.comparables.length ? `<table><tr><th>Listing</th><th>Price</th><th>Status</th></tr>${v.comparables.map(c => {
+        const u = safeUrl(c.url);
+        return `<tr><td>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a>` : esc(c.title)}<div class="muted small">${esc(c.source)}</div></td><td>${usd(c.priceUsd)}</td><td>${pretty(c.status)}</td></tr>`;
+      }).join("")}</table>` : `<p class="muted small">No comparable listings found.</p>`}
+    </div>`;
+  } else if (d.verificationError) {
+    html += `<div class="card"><p class="error small">Web check failed: ${esc(d.verificationError)}</p></div>`;
+  }
+
+  if (d.notices?.length) html += `<p class="muted small">${d.notices.map(esc).join("<br>")}</p>`;
+
+  const cost = d.usage.reduce((s, u) => s + u.estCostUsd, 0);
+  const ms = Object.entries(d.timingsMs).map(([k, t]) => `${k} ${(t / 1000).toFixed(1)}s`).join(" · ");
+  html += `<p class="muted small">${esc(d.usage.map(u => u.model).join(" → "))} · est. model cost $${cost.toFixed(4)}${v ? " + web search" : ""} · ${esc(ms)}<br>
+    Estimates only. Photos cannot authenticate an item, and TheRealReal rates change; check their current commission chart.</p>`;
+  return html;
+}
+</script>
+</body>
+</html>

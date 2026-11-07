@@ -1,0 +1,22 @@
+# Build output
+.gradle/
+build/
+.kotlin/
+out/
+
+# IDE / local tooling
+.idea/
+*.iml
+.vscode/
+.claude/
+.DS_Store
+
+# Secrets: never commit API keys. Keys live in ~/.zshenv or a local .env.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local test photos (may be copyrighted or personal)
+test img/
